@@ -52,6 +52,11 @@ def seed_essentials():
         slug = pd.pop('category')
         p = Product(**pd)
         p.category = slug
+        p.sales = 0
+        p.reviews_count = 0
+        p.rating = 0
+        p.is_product_of_day = False
+        p.featured = False
         db.session.add(p)
     if not StoreSetting.query.first():
         db.session.add(StoreSetting())
