@@ -62,7 +62,11 @@ def seed_essentials():
         for p in Product.query.all():
             p.sales = 0
             p.reviews_count = 0
-        print('Reset product sales/reviews to zero')
+            p.rating = 0
+            p.is_available_today = False
+            p.is_product_of_day = False
+            p.featured = False
+        print('Reset product analytics fields to zero')
     db.session.commit()
 
 
