@@ -21,3 +21,4 @@ class Config:
     ADMIN_EMAIL = 'admin@arogyapaadhai.com'
     ADMIN_PASSWORD = 'admin123'
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:3000,http://localhost:5173').split(',')
+    CORS_ORIGINS = [o.strip() for o in CORS_ORIGINS if o.strip()]
