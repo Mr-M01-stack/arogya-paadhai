@@ -15,6 +15,8 @@ class Config:
         'DATABASE_URL',
         f'sqlite:///{os.path.join(BASE_DIR, "arogya.db")}'
     )
+    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith('postgresql://'):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace('postgresql://', 'postgresql+psycopg://', 1)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     ADMIN_EMAIL = 'admin@arogyapaadhai.com'
     ADMIN_PASSWORD = 'admin123'
