@@ -27,6 +27,9 @@ INTERNAL = {'id', 'created_at', 'updated_at'}
 @jwt_required()
 def create_stall():
     data = {k: v for k, v in request.get_json().items() if k not in INTERNAL}
+    for numeric_key in ('temperature', 'working_hours'):
+        if numeric_key in data and data[numeric_key] == '':
+            data[numeric_key] = None
     d = datetime.strptime(data.get('date', date.today().isoformat()), '%Y-%m-%d').date()
     data['date'] = d
     existing = Stall.query.filter_by(date=d).first()
@@ -47,6 +50,9 @@ def create_stall():
 def update_stall(id):
     stall = Stall.query.get_or_404(id)
     data = {k: v for k, v in request.get_json().items() if k not in INTERNAL}
+    for numeric_key in ('temperature', 'working_hours'):
+        if numeric_key in data and data[numeric_key] == '':
+            data[numeric_key] = None
     for k, v in data.items():
         if k == 'date' and isinstance(v, str):
             v = datetime.strptime(v, '%Y-%m-%d').date()
@@ -376,6 +382,8 @@ def get_investment():
 @jwt_required()
 def create_investment():
     data = {k: v for k, v in request.get_json().items() if k not in INTERNAL}
+    if 'product_id' in data and data['product_id'] == '':
+        data['product_id'] = None
     if data.get('date'):
         data['date'] = datetime.strptime(data['date'], '%Y-%m-%d').date()
     elif 'date' in data:
@@ -396,6 +404,8 @@ def create_investment():
 def update_investment(id):
     inv = Investment.query.get_or_404(id)
     data = {k: v for k, v in request.get_json().items() if k not in INTERNAL}
+    if 'product_id' in data and data['product_id'] == '':
+        data['product_id'] = None
     for k, v in data.items():
         if k == 'date' and isinstance(v, str):
             try:

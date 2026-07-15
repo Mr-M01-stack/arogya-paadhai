@@ -50,15 +50,16 @@ export default function InvestmentPage() {
       payload[k] = numFields.includes(k) ? (parseFloat(form[k]) || 0) : form[k];
     });
     try {
-      await fetch(`${API}/investment`, {
+      const res = await fetch(`${API}/investment`, {
         method: 'POST', headers: headers(), body: JSON.stringify(payload),
       });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Save failed'); }
       const empty = Object.fromEntries(Object.keys(form).map(k => [k, k === 'date' ? date : 0]));
       empty.date = date;
       empty.product_id = '';
       setForm(empty);
-      const res = await fetch(`${API}/investment?date=${date}`);
-      setRecords(await res.json());
+      const r = await fetch(`${API}/investment?date=${date}`);
+      setRecords(await r.json());
     } catch (err) {
       console.error('Save failed:', err);
       alert('Failed to save investment. Please try again.');

@@ -47,8 +47,8 @@ export default function StallPage() {
     e.preventDefault();
     setSaving(true);
     const payload = { ...form };
-    if (payload.temperature) payload.temperature = parseFloat(payload.temperature);
-    if (payload.working_hours) payload.working_hours = parseFloat(payload.working_hours);
+    payload.temperature = payload.temperature ? parseFloat(payload.temperature) : null;
+    payload.working_hours = payload.working_hours ? parseFloat(payload.working_hours) : null;
 
     try {
       const res = await fetch(`${API}/stalls`, {
