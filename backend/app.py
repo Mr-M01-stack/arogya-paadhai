@@ -1,5 +1,5 @@
 import json
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config import Config
@@ -63,7 +63,19 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    CORS(app, origins=Config.CORS_ORIGINS, supports_credentials=True)
+    CORS(app, origins=Config.CORS_ORIGINS, supports_credentials=True, vary_header=False)
+
+    @app.after_request
+    def add_cors_headers(response):
+        origin = request.headers.get('Origin', '')
+        if origin:
+            allowed = Config.CORS_ORIGINS
+            if '*' in allowed or origin in allowed:
+                response.headers['Access-Control-Allow-Origin'] = origin
+                response.headers['Access-Control-Allow-Credentials'] = 'true'
+                response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+                response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, X-Requested-With'
+        return response
 
     db.init_app(app)
 
