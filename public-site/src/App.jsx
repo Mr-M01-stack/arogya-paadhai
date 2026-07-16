@@ -3,6 +3,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import { LanguageProvider } from './context/LanguageContext';
 import { StoreSettingsProvider } from './context/StoreSettingsContext';
+import { CartProvider } from './context/CartContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
@@ -21,6 +22,7 @@ import GalleryPage from './pages/GalleryPage';
 export default function App() {
   return (
     <StoreSettingsProvider>
+    <CartProvider>
     <LanguageProvider>
       <div className="d-flex flex-column min-vh-100">
         <Navbar />
@@ -42,6 +44,7 @@ export default function App() {
         <Footer />
       </div>
     </LanguageProvider>
+    </CartProvider>
     </StoreSettingsProvider>
   );
 }

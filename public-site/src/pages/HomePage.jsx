@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchProducts } from '../api';
 import { categories } from '../data/categories';
+import { useCart } from '../context/CartContext';
 import {
   GiGrain, GiWheat, GiGrainBundle, GiManualJuicer, GiPowderBag, GiChipsBag, GiFarmTractor, GiOilPump,
   GiLeafSwirl, GiHeartBeats, GiStarfighter, GiFruitBowl, GiPlantRoots, GiWaterDrop,
@@ -27,9 +28,16 @@ function StarRating({ rating }) {
 
 export default function HomePage() {
   const settings = useStoreSettings();
+  const { addToCart } = useCart();
   const [activeTab, setActiveTab] = useState('All');
   const [products, setProducts] = useState([]);
   useEffect(() => { fetchProducts().then(setProducts); }, []);
+  const [addedIds, setAddedIds] = useState({});
+  const handleQuickAdd = (product) => {
+    addToCart({ id: product.id, name: product.name, price: product.price, image: product.image }, 1);
+    setAddedIds(prev => ({ ...prev, [product.id]: true }));
+    setTimeout(() => setAddedIds(prev => ({ ...prev, [product.id]: false })), 1500);
+  };
   const todayAvailable = products.filter(p => p.isAvailableToday);
   const featured = products.filter(p => p.featured).length >= 4 ? products.filter(p => p.featured) : products.slice(0, 8);
   const filteredProducts = activeTab === 'All' ? featured : featured.filter(p => p.category === activeTab);
@@ -132,9 +140,15 @@ export default function HomePage() {
                           <span className="text-decoration-line-through text-muted small">&#8377;{product.originalPrice}</span>
                         )}
                       </div>
-                      <Link to={`/products/${product.slug}`} className="btn btn-sm w-100 text-white" style={{ backgroundColor: '#2d7a35' }}>
-                        View Details
-                      </Link>
+                      <div className="d-flex gap-1">
+                        <Link to={`/products/${product.slug}`} className="btn btn-sm text-white flex-grow-1" style={{ backgroundColor: '#2d7a35', fontSize: '0.75rem' }}>
+                          Details
+                        </Link>
+                        <button className="btn btn-sm text-white" style={{ backgroundColor: addedIds[product.id] ? '#e8b83e' : '#2d7a35', fontSize: '0.75rem' }}
+                          onClick={() => handleQuickAdd(product)}>
+                          {addedIds[product.id] ? '+' : '+'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -214,9 +228,15 @@ export default function HomePage() {
                         <span className="text-decoration-line-through text-muted small">&#8377;{product.originalPrice}</span>
                       )}
                     </div>
-                    <Link to={`/products/${product.slug}`} className="btn btn-sm w-100 text-white" style={{ backgroundColor: '#2d7a35' }}>
-                      View Details
-                    </Link>
+                    <div className="d-flex gap-1">
+                      <Link to={`/products/${product.slug}`} className="btn btn-sm text-white flex-grow-1" style={{ backgroundColor: '#2d7a35', fontSize: '0.75rem' }}>
+                        Details
+                      </Link>
+                      <button className="btn btn-sm text-white" style={{ backgroundColor: addedIds[product.id] ? '#e8b83e' : '#2d7a35', fontSize: '0.75rem' }}
+                        onClick={() => handleQuickAdd(product)}>
+                        {addedIds[product.id] ? '\u2713' : '+'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

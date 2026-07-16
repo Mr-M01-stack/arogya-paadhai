@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useStoreSettings } from '../context/StoreSettingsContext';
+import { useCart } from '../context/CartContext';
 import { fetchProducts, fetchTodayProducts } from '../api';
 import { GiGreenhouse, GiWheat, GiDroplets, GiOilPump, GiCandyCanes, GiHealthPotion } from 'react-icons/gi';
 import {
@@ -119,7 +120,15 @@ function SectionHeader({ badge, title, subtitle, light }) {
 export default function LandingPage() {
   const { t } = useLanguage();
   const settings = useStoreSettings();
+  const { addToCart } = useCart();
+  const [addedIds, setAddedIds] = useState({});
   const [email, setEmail] = useState('');
+
+  const handleQuickAdd = (item) => {
+    addToCart({ id: item.id, name: item.name, price: item.price }, 1);
+    setAddedIds(prev => ({ ...prev, [item.id]: true }));
+    setTimeout(() => setAddedIds(prev => ({ ...prev, [item.id]: false })), 1500);
+  };
   const [subscribed, setSubscribed] = useState(false);
   const [todayProducts, setTodayProducts] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -348,10 +357,15 @@ export default function LandingPage() {
                                     style={{ objectFit: 'cover' }}
                                   />
                                 </div>
-                                <div>
+                                <div className="flex-grow-1">
                                   <span className="d-block fw-bold small" style={{ color: 'var(--text-dark)', fontSize: '0.75rem', lineHeight: 1.2 }}>{item.name}</span>
                                   <span className="small" style={{ color: 'var(--primary)', fontSize: '0.7rem' }}>₹{item.price}</span>
                                 </div>
+                                <button className="btn btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center text-white flex-shrink-0"
+                                  style={{ width: 24, height: 24, backgroundColor: addedIds[item.id] ? '#e8b83e' : 'var(--primary)', fontSize: '0.7rem', border: 'none' }}
+                                  onClick={() => handleQuickAdd(item)}>
+                                  {addedIds[item.id] ? '\u2713' : '+'}
+                                </button>
                               </div>
                             </div>
                           ))
@@ -611,25 +625,25 @@ export default function LandingPage() {
                         <span className="fw-bold" style={{ color: 'var(--primary)', fontSize: '1.05rem' }}>
                           ₹{item.price}
                         </span>
-                        <Link
-                          to={`/products/${item.slug}`}
+                        <button
                           className="btn btn-sm rounded-pill text-white d-inline-flex align-items-center gap-1"
                           style={{
-                            backgroundColor: 'var(--primary)',
+                            backgroundColor: addedIds[item.id] ? '#e8b83e' : 'var(--primary)',
                             border: 'none',
                             padding: '6px 16px',
                             fontSize: '0.78rem',
                             transition: 'all 0.3s ease',
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'var(--primary-dark)';
+                            if (!addedIds[item.id]) e.currentTarget.style.backgroundColor = 'var(--primary-dark)';
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'var(--primary)';
+                            if (!addedIds[item.id]) e.currentTarget.style.backgroundColor = 'var(--primary)';
                           }}
+                          onClick={() => handleQuickAdd(item)}
                         >
-                          {t.common.addToCart}
-                        </Link>
+                          {addedIds[item.id] ? '\u2713' : t.common.addToCart}
+                        </button>
                       </div>
                     </div>
                   </div>
