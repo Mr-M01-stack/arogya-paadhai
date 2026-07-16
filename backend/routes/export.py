@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 from datetime import datetime, date
-from models import db, Stall, Sale, ProductStock, Production, Investment, Customer, EnquiryExtended, ProductRequest, Climate, DailyUpdate, Product
+from models import db, Stall, Sale, ProductStock, Production, Investment, Customer, EnquiryExtended, ProductRequest, Climate, DailyUpdate, Product, Order
 
 export_bp = Blueprint('export', __name__, url_prefix='/api')
 
@@ -16,6 +16,7 @@ TABLES = {
     'requests': (ProductRequest, ['date']),
     'climate': (Climate, ['date']),
     'daily_updates': (DailyUpdate, ['date']),
+    'orders': (Order, []),
     'products': (Product, []),
 }
 

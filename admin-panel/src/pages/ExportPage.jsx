@@ -14,6 +14,7 @@ const TABLES = [
   { key: 'customers', label: 'Customers' },
   { key: 'enquiries', label: 'Enquiries' },
   { key: 'requests', label: 'Product Requests' },
+  { key: 'orders', label: 'Orders' },
   { key: 'climate', label: 'Climate' },
   { key: 'daily_updates', label: 'Daily Updates' },
   { key: 'products', label: 'Products' },
