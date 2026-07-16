@@ -2,7 +2,6 @@ import { useState, useRef } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { GiGreenhouse } from 'react-icons/gi';
 import { FaShoppingCart, FaWhatsapp, FaCheckCircle, FaCopy, FaCheck, FaTrash, FaPlus, FaMinus } from 'react-icons/fa';
-import { Dropdown } from 'bootstrap';
 import { useLanguage } from '../context/LanguageContext';
 import { useCart } from '../context/CartContext';
 import { useStoreSettings } from '../context/StoreSettingsContext';
@@ -42,12 +41,7 @@ export default function Navbar() {
 
   const openCheckout = () => {
     if (cart.length === 0) return;
-    if (cartToggleRef.current) {
-      try {
-        const dd = Dropdown.getInstance(cartToggleRef.current);
-        if (dd) dd.hide();
-      } catch (_) {}
-    }
+    if (cartToggleRef.current) cartToggleRef.current.click();
     setShowCheckout(true);
   };
 
