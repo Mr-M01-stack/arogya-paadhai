@@ -45,12 +45,14 @@ export default function OrdersPage() {
 
   const formatDate = (d) => d ? new Date(d).toLocaleString('en-IN') : '-';
 
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
   const printBill = (o) => {
     const win = window.open('', '_blank');
     const itemsRows = (o.items || []).map((item, i) => `
       <tr>
         <td style="padding:6px 10px;border:1px solid #ddd;text-align:center">${i + 1}</td>
-        <td style="padding:6px 10px;border:1px solid #ddd">${item.name}</td>
+        <td style="padding:6px 10px;border:1px solid #ddd">${esc(item.name)}</td>
         <td style="padding:6px 10px;border:1px solid #ddd;text-align:center">${item.quantity}</td>
         <td style="padding:6px 10px;border:1px solid #ddd;text-align:right">Rs. ${item.price}</td>
         <td style="padding:6px 10px;border:1px solid #ddd;text-align:right">Rs. ${(item.quantity * item.price).toFixed(2)}</td>
@@ -60,7 +62,7 @@ export default function OrdersPage() {
     win.document.write(`
       <html>
       <head>
-        <title>Bill - ${o.order_id}</title>
+        <title>Bill - ${esc(o.order_id)}</title>
         <style>
           @page { margin: 15mm; }
           body { font-family: 'Courier New', monospace; font-size: 13px; color: #222; margin: 0; padding: 20px; }
@@ -91,11 +93,11 @@ export default function OrdersPage() {
         </div>
 
         <table class="info-table">
-          <tr><td>Order ID</td><td>: ${o.order_id}</td></tr>
+          <tr><td>Order ID</td><td>: ${esc(o.order_id)}</td></tr>
           <tr><td>Date</td><td>: ${formatDate(o.created_at)}</td></tr>
-          <tr><td>Customer</td><td>: ${o.customer_name}</td></tr>
-          <tr><td>Phone</td><td>: ${o.phone}</td></tr>
-          ${o.address ? `<tr><td>Address</td><td>: ${o.address}</td></tr>` : ''}
+          <tr><td>Customer</td><td>: ${esc(o.customer_name)}</td></tr>
+          <tr><td>Phone</td><td>: ${esc(o.phone)}</td></tr>
+          ${o.address ? `<tr><td>Address</td><td>: ${esc(o.address)}</td></tr>` : ''}
         </table>
 
         <h3>Order Items</h3>
@@ -119,10 +121,10 @@ export default function OrdersPage() {
         </table>
 
         <div style="text-align:center">
-          <div class="status-box">Payment: ${o.payment_status.toUpperCase()} | Status: ${o.order_status.toUpperCase()}</div>
+          <div class="status-box">Payment: ${esc(o.payment_status.toUpperCase())} | Status: ${esc(o.order_status.toUpperCase())}</div>
         </div>
 
-        ${o.notes ? `<p style="margin-top:10px;font-size:11px"><strong>Notes:</strong> ${o.notes}</p>` : ''}
+        ${o.notes ? `<p style="margin-top:10px;font-size:11px"><strong>Notes:</strong> ${esc(o.notes)}</p>` : ''}
 
         <div class="footer">
           <p>Thank you for choosing Arogya Paadhai!</p>

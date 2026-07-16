@@ -56,9 +56,6 @@ export default function LoginPage() {
           <div className="text-center mt-3">
             <a href="#" className="forgot-link" onClick={(e) => { e.preventDefault(); setForgotOpen(true); }}>Forgot password?</a>
           </div>
-          <div className="login-hints mt-3">
-            <small className="text-muted">Demo: aarokiyapaathai@gmail.com / Admin@123</small>
-          </div>
         </form>
       </div>
 
@@ -72,14 +69,9 @@ export default function LoginPage() {
             </div>
             <div className="modal-body">
               <p className="mb-2">Contact the system administrator to reset your password.</p>
-              <p className="mb-0 text-muted small">Admin email: aarokiyapaathai@gmail.com</p>
-              <p className="mb-0 text-muted small">Default password: Admin@123</p>
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setForgotOpen(false)}>Close</button>
-              <button className="btn btn-success" onClick={() => { setForgotOpen(false); setEmail('aarokiyapaathai@gmail.com'); setPassword('Admin@123'); }}>
-                Auto-fill Credentials
-              </button>
             </div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import json
+import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
@@ -34,8 +35,10 @@ def seed_essentials():
         {'name': 'Black Chickpea', 'slug': 'black-chickpea', 'description': 'Organic black chickpea - protein-rich traditional snack.', 'price': 60.00, 'category': 'traditional-snacks', 'image': '/images/landing/black-chickpea.png', 'ingredients': json.dumps(['Organic Black Chickpea']), 'benefits': json.dumps(['High protein', 'Rich in fiber', 'Good for heart', 'Controls blood sugar']), 'usage': 'Soak overnight, cook until soft. Use in salads or as curry.', 'storage': 'Store in an airtight container in a cool, dry place.', 'shelf_life': '12 months', 'availability': 'in_stock', 'is_available_today': True, 'stock': 80},
     ]
     if not AdminUser.query.first():
-        admin = AdminUser(email='aarokiyapaathai@gmail.com', name='Admin')
-        admin.set_password('Admin@123')
+        admin_email = os.environ.get('ADMIN_EMAIL', 'aarokiyapaathai@gmail.com')
+        admin_password = os.environ.get('ADMIN_PASSWORD', 'Admin@123')
+        admin = AdminUser(email=admin_email, name='Admin')
+        admin.set_password(admin_password)
         db.session.add(admin)
         categories_data = [
             {'name': 'Traditional Porridges', 'slug': 'traditional-porridges', 'description': 'Nutritious traditional porridges made from organic millets and rice', 'image': '/images/landing/black-gram-porridge.png', 'product_count': 5, 'is_active': True},
@@ -81,13 +84,15 @@ def create_app():
     @app.after_request
     def add_cors_headers(response):
         origin = request.headers.get('Origin', '')
-        if origin:
-            allowed = Config.CORS_ORIGINS
-            if '*' in allowed or origin in allowed:
-                response.headers['Access-Control-Allow-Origin'] = origin
-                response.headers['Access-Control-Allow-Credentials'] = 'true'
-                response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-                response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, X-Requested-With'
+        if origin and origin in Config.CORS_ORIGINS:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, X-Requested-With'
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
         return response
 
     db.init_app(app)
@@ -147,4 +152,4 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=os.environ.get('FLASK_DEBUG', 'false').lower() == 'true')

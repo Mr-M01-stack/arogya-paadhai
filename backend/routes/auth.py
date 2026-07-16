@@ -58,8 +58,8 @@ def change_password():
         return jsonify({'error': 'Current and new password required'}), 400
     if not admin.check_password(data['current']):
         return jsonify({'error': 'Current password is incorrect'}), 401
-    if len(data['new']) < 4:
-        return jsonify({'error': 'New password must be at least 4 characters'}), 400
+    if len(data['new']) < 8:
+        return jsonify({'error': 'New password must be at least 8 characters'}), 400
     admin.set_password(data['new'])
     db.session.commit()
     return jsonify({'message': 'Password updated successfully'}), 200
