@@ -291,6 +291,10 @@ body {
 .notif-warning .notif-item-icon { color: #f59e0b; }
 .notif-info .notif-item-icon { color: #3b82f6; }
 
+.notif-read { opacity: 0.55; }
+.notif-read .notif-item-text p { font-weight: 400; }
+.notif-item:not(.notif-read) .notif-item-text p { font-weight: 500; }
+
 .notif-empty {
   padding: 32px 16px;
   text-align: center;

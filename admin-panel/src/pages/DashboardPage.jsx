@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiPackage, FiDollarSign, FiTrendingUp, FiUsers, FiBox, FiMapPin, FiMessageSquare, FiFileText, FiShoppingCart, FiCreditCard, FiAlertTriangle, FiBarChart2, FiDownload } from 'react-icons/fi';
+import { FiPackage, FiDollarSign, FiTrendingUp, FiUsers, FiBox, FiMapPin, FiMessageSquare, FiFileText, FiShoppingCart, FiCreditCard, FiAlertTriangle, FiBarChart2, FiDownload, FiClipboard } from 'react-icons/fi';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend } from 'recharts';
 import { formatIndian, formatIndianInt } from '../utils/format';
 import { API } from '../api';
@@ -9,6 +9,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#f97316', '#84cc16', '#ec4899', '#14b8a6'];
+const STATUS_COLORS = { pending: '#f59e0b', confirmed: '#3b82f6', preparing: '#8b5cf6', shipped: '#06b6d4', delivered: '#10b981', cancelled: '#ef4446' };
 const PERIODS = [
   { key: 'today', label: 'Today' },
   { key: 'week', label: 'Week' },
@@ -21,6 +22,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [dashboard, setDashboard] = useState(null);
   const [revenueChart, setRevenueChart] = useState(null);
+  const [ordersChart, setOrdersChart] = useState(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('today');
   const [customFrom, setCustomFrom] = useState('');
@@ -34,15 +36,19 @@ export default function DashboardPage() {
       dashUrl += `?from=${customFrom}&to=${customTo}`;
     }
     let chartUrl = `${API}/dashboard/revenue-chart?period=${period}`;
+    let orderChartUrl = `${API}/dashboard/orders-chart?period=${period}`;
     if (period === 'custom' && customFrom && customTo) {
       chartUrl = `${API}/dashboard/revenue-chart?period=month`;
+      orderChartUrl = `${API}/dashboard/orders-chart?period=month`;
     }
     Promise.all([
       fetch(dashUrl).then(r => r.json()),
       fetch(chartUrl).then(r => r.json()),
-    ]).then(([dash, chart]) => {
+      fetch(orderChartUrl).then(r => r.json()),
+    ]).then(([dash, chart, oChart]) => {
       setDashboard(dash);
       setRevenueChart(chart);
+      setOrdersChart(oChart);
       setLoading(false);
     });
   };
@@ -66,12 +72,19 @@ export default function DashboardPage() {
     revenue: revenueChart.values[i],
   })) || [];
 
+  const ordersChartData = ordersChart?.labels?.map((label, i) => ({
+    date: period === 'year' ? label.slice(0, 7) : label.slice(5),
+    orders: ordersChart.values[i],
+  })) || [];
+
   const paymentData = Object.entries(p.payment_breakdown || {}).map(([name, value]) => ({ name, value }));
   const investmentData = Object.entries(p.investment_breakdown || {}).map(([name, value]) => ({ name, value: Math.round(value) }));
   const prodVsSalesData = (p.prod_vs_sales || []).slice(0, 10);
   const topProductsData = (p.top_products || []).slice(0, 10);
   const customerTrendData = (p.customer_trend || []);
   const stockLevelsData = (p.stock_levels || []).slice(0, 15);
+
+  const ordersByStatusData = Object.entries(p.orders_by_status || {}).map(([name, value]) => ({ name, value }));
 
   const kpiCards = [
     { icon: FiDollarSign, label: 'Revenue', value: formatIndian(p.revenue || 0), color: '#10b981', bg: '#d1fae5', sub: periodLabel },
@@ -80,6 +93,8 @@ export default function DashboardPage() {
     { icon: FiTrendingUp, label: 'Profit', value: formatIndian(p.profit || 0), color: '#f59e0b', bg: '#fef3c7', sub: periodLabel },
     { icon: FiCreditCard, label: 'Investment', value: formatIndian(p.investment || 0), color: '#ef4444', bg: '#fee2e2', sub: periodLabel },
     { icon: FiUsers, label: 'Customers', value: formatIndianInt(p.customers || 0), color: '#84cc16', bg: '#f7fee7', sub: periodLabel },
+    { icon: FiClipboard, label: 'Total Orders', value: formatIndianInt(p.total_orders || 0), color: '#06b6d4', bg: '#ecfeff', sub: periodLabel },
+    { icon: FiDollarSign, label: 'Order Revenue', value: formatIndian(p.order_revenue || 0), color: '#10b981', bg: '#d1fae5', sub: 'From orders' },
     { icon: FiMapPin, label: 'Stall Status', value: d.stall?.status || 'Not logged', color: '#06b6d4', bg: '#ecfeff', sub: d.stall?.date || '' },
     { icon: FiBox, label: 'Low Stock Items', value: formatIndianInt(d.low_stock_count || 0), color: '#ef4444', bg: '#fef2f2', sub: 'Needs attention' },
     { icon: FiPackage, label: 'Total Products', value: formatIndianInt(d.total_products || 0), color: '#10b981', bg: '#d1fae5', sub: 'In catalog' },
@@ -98,9 +113,14 @@ export default function DashboardPage() {
       ['Profit', p.profit || 0],
       ['Investment', p.investment || 0],
       ['Customers', p.customers || 0],
+      ['Total Orders', p.total_orders || 0],
+      ['Order Revenue', p.order_revenue || 0],
     ];
     (p.top_products || []).forEach((tp, i) => {
       rows.push([`Top ${i + 1}`, `${tp.name} | Qty: ${tp.quantity} | Rev: ${tp.revenue}`]);
+    });
+    Object.entries(p.orders_by_status || {}).forEach(([status, count]) => {
+      rows.push([`Orders: ${status}`, count]);
     });
     const ws1 = XLSX.utils.aoa_to_sheet(rows);
     XLSX.utils.book_append_sheet(wb, ws1, 'Summary');
@@ -134,6 +154,8 @@ export default function DashboardPage() {
       ['Profit', String(p.profit || 0)],
       ['Investment', String(p.investment || 0)],
       ['Customers', String(p.customers || 0)],
+      ['Total Orders', String(p.total_orders || 0)],
+      ['Order Revenue', String(p.order_revenue || 0)],
     ];
     doc.autoTable({ startY: 34, head: [['Metric', 'Value']], body, styles: { fontSize: 9 } });
     doc.save(`dashboard_${period}_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -221,6 +243,39 @@ export default function DashboardPage() {
               <button className="btn btn-outline-success" onClick={() => navigate('/products')}><FiPackage className="me-2" />Manage Products</button>
               <button className="btn btn-outline-primary" onClick={() => navigate('/stock')}><FiBox className="me-2" />Check Stock</button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="row g-3 mb-4">
+        <div className="col-lg-6">
+          <div className="admin-card">
+            <h6 className="card-title mb-3">Orders Trend ({periodLabel})</h6>
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={ordersChartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="date" fontSize={11} tick={{ fill: '#6b7280' }} />
+                <YAxis fontSize={11} tick={{ fill: '#6b7280' }} allowDecimals={false} />
+                <Tooltip formatter={(value) => [value, 'Orders']} />
+                <Line type="monotone" dataKey="orders" stroke="#06b6d4" strokeWidth={2} dot={{ fill: '#06b6d4', r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+            {ordersChartData.length === 0 && <p className="text-center text-muted">No order data</p>}
+          </div>
+        </div>
+        <div className="col-lg-6">
+          <div className="admin-card">
+            <h6 className="card-title mb-3">Orders by Status</h6>
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Pie data={ordersByStatusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={({ name, value }) => `${name}: ${value}`}>
+                  {ordersByStatusData.map((entry, i) => <Cell key={i} fill={STATUS_COLORS[entry.name] || COLORS[i % COLORS.length]} />)}
+                </Pie>
+                <Tooltip formatter={(value) => [value, 'Orders']} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+            {ordersByStatusData.length === 0 && <p className="text-center text-muted">No order data</p>}
           </div>
         </div>
       </div>

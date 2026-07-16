@@ -678,6 +678,15 @@ def dashboard():
         all_names = set(list(prod_map.keys()) + list(sale_map.keys()))
         prod_vs_sales = [{'name': n, 'produced': prod_map.get(n, 0), 'sold': sale_map.get(n, 0)} for n in all_names]
 
+        orders = Order.query.filter(Order.created_at >= start, Order.created_at <= end + timedelta(days=1)).all()
+        total_orders = len(orders)
+        orders_by_status = {}
+        order_revenue = 0
+        for o in orders:
+            orders_by_status[o.order_status] = orders_by_status.get(o.order_status, 0) + 1
+            if o.payment_status == 'paid' or o.order_status in ('delivered', 'shipped'):
+                order_revenue += o.total_amount or 0
+
         result[pname] = {
             'revenue': revenue,
             'transactions': transactions,
@@ -691,6 +700,9 @@ def dashboard():
             'customer_trend': [{'date': r[0].isoformat(), 'count': r[1]} for r in customer_trend],
             'stock_levels': stock_levels,
             'prod_vs_sales': prod_vs_sales,
+            'total_orders': total_orders,
+            'orders_by_status': orders_by_status,
+            'order_revenue': round(order_revenue, 2),
         }
 
     low_stock_count = ProductStock.query.filter(
@@ -743,6 +755,37 @@ def revenue_chart():
     return jsonify({'labels': labels, 'values': values})
 
 
+@stall_bp.route('/dashboard/orders-chart', methods=['GET'])
+def orders_chart():
+    period = request.args.get('period', 'week')
+    today_d = date.today()
+    if period == 'today':
+        start = today_d
+        days = 1
+    elif period == 'week':
+        start = today_d - timedelta(days=6)
+        days = 7
+    elif period == 'month':
+        start = today_d - timedelta(days=29)
+        days = 30
+    elif period == 'year':
+        start = today_d.replace(month=1, day=1)
+        days = (today_d - start).days + 1
+    else:
+        start = today_d - timedelta(days=6)
+        days = 7
+    end = start + timedelta(days=days)
+    results = db.session.query(
+        func.date(Order.created_at), func.count(Order.id)
+    ).filter(Order.created_at >= start, Order.created_at < end).group_by(
+        func.date(Order.created_at)
+    ).order_by(func.date(Order.created_at)).all()
+    data = {r[0].isoformat(): r[1] for r in results}
+    labels = [(start + timedelta(days=i)).isoformat() for i in range(days)]
+    values = [data.get(d, 0) for d in labels]
+    return jsonify({'labels': labels, 'values': values})
+
+
 @stall_bp.route('/notifications', methods=['GET'])
 def get_notifications():
     today = date.today()
@@ -761,7 +804,7 @@ def get_notifications():
             'severity': 'danger',
             'message': f"{product.name if product else 'Item'} — only {s.available_stock} left",
             'link': '/stock',
-            'time': s.created_at.isoformat() if s.created_at else None,
+            'time': s.created_at.isoformat() if s.created_at else today.isoformat(),
         })
 
     # Pending enquiries
@@ -773,7 +816,7 @@ def get_notifications():
             'severity': 'warning',
             'message': f"Enquiry from {e.customer_name} — {e.requested_product or 'General'}",
             'link': '/enquiries',
-            'time': e.created_at.isoformat() if e.created_at else None,
+            'time': e.created_at.isoformat() if e.created_at else today.isoformat(),
         })
 
     # Pending product requests
@@ -785,7 +828,7 @@ def get_notifications():
             'severity': 'info',
             'message': f"Request for \"{r.requested_item}\" by {r.requested_by or 'Unknown'}",
             'link': '/daily-update',
-            'time': r.created_at.isoformat() if r.created_at else None,
+            'time': r.created_at.isoformat() if r.created_at else today.isoformat(),
         })
 
     # Stall not logged today
@@ -797,14 +840,44 @@ def get_notifications():
             'severity': 'warning',
             'message': 'Stall not logged for today yet',
             'link': '/stall',
-            'time': None,
+            'time': today.isoformat(),
         })
 
-    # Sort by severity: danger first, then warning, then info
-    severity_order = {'danger': 0, 'warning': 1, 'info': 2}
-    warnings.sort(key=lambda w: severity_order.get(w['severity'], 3))
+    # New pending orders (last 7 days)
+    recent_orders = Order.query.filter(
+        Order.created_at >= datetime.combine(today - timedelta(days=7), datetime.min.time())
+    ).order_by(Order.created_at.desc()).all()
+    for o in recent_orders:
+        if o.order_status == 'pending':
+            warnings.append({
+                'type': 'new_order',
+                'icon': 'shopping-cart',
+                'severity': 'info',
+                'message': f"New order {o.order_id} from {o.customer_name} — Rs.{o.total_amount}",
+                'link': '/orders',
+                'time': o.created_at.isoformat() if o.created_at else today.isoformat(),
+            })
+        elif o.order_status in ('confirmed', 'preparing', 'shipped'):
+            warnings.append({
+                'type': 'order_status',
+                'icon': 'package',
+                'severity': 'info',
+                'message': f"Order {o.order_id} — {o.order_status}",
+                'link': '/orders',
+                'time': o.updated_at.isoformat() if o.updated_at else today.isoformat(),
+            })
+
+    # Sort by time descending (newest first), then by severity
+    warnings.sort(key=lambda w: (w.get('time') or '', {'danger': 0, 'warning': 1, 'info': 2, 'success': 3}.get(w['severity'], 4)), reverse=True)
 
     return jsonify({
         'count': len(warnings),
         'notifications': warnings,
     })
+
+
+@stall_bp.route('/notifications/mark-read', methods=['POST'])
+def mark_notifications_read():
+    data = request.get_json(silent=True) or {}
+    notification_ids = data.get('ids', [])
+    return jsonify({'ok': True, 'marked': len(notification_ids)})

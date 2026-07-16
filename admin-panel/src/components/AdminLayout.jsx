@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiBell, FiChevronDown, FiMenu, FiX, FiAlertTriangle, FiMessageSquare, FiFileText, FiMapPin } from 'react-icons/fi';
+import { FiBell, FiChevronDown, FiMenu, FiX, FiAlertTriangle, FiMessageSquare, FiFileText, FiMapPin, FiShoppingCart, FiPackage, FiCheck } from 'react-icons/fi';
 import Sidebar from './Sidebar';
 
 import { API } from '../api';
@@ -20,13 +20,20 @@ const iconMap = {
   'message-square': FiMessageSquare,
   'file-text': FiFileText,
   'map-pin': FiMapPin,
+  'shopping-cart': FiShoppingCart,
+  'package': FiPackage,
 };
 
 const severityStyles = {
   danger: 'notif-danger',
   warning: 'notif-warning',
   info: 'notif-info',
+  success: 'notif-info',
 };
+
+function getNotifId(n) {
+  return `${n.type}_${n.message}_${n.time || ''}`;
+}
 
 export default function AdminLayout({ children }) {
   const { isAuthenticated, user, logout } = useAuth();
@@ -36,7 +43,20 @@ export default function AdminLayout({ children }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [readIds, setReadIds] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('notifReadIds') || '[]')); }
+    catch { return new Set(); }
+  });
   const notifRef = useRef(null);
+
+  const unreadCount = notifications.filter(n => !readIds.has(getNotifId(n))).length;
+
+  const markAllRead = useCallback(() => {
+    const ids = new Set(readIds);
+    notifications.forEach(n => ids.add(getNotifId(n)));
+    setReadIds(ids);
+    localStorage.setItem('notifReadIds', JSON.stringify([...ids]));
+  }, [notifications, readIds]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -91,13 +111,20 @@ export default function AdminLayout({ children }) {
             <div className="notification-wrapper" ref={notifRef}>
               <button className="notification-btn position-relative me-3" onClick={() => setNotifOpen(!notifOpen)}>
                 <FiBell size={20} />
-                {notifications.length > 0 && <span className="notification-badge">{notifications.length}</span>}
+                {unreadCount > 0 && <span className="notification-badge">{unreadCount}</span>}
               </button>
               {notifOpen && (
                 <div className="notification-dropdown">
                   <div className="notif-header">
                     <strong>Notifications</strong>
-                    <span className="notif-count">{notifications.length} alerts</span>
+                    <div className="d-flex align-items-center gap-2">
+                      {unreadCount > 0 && (
+                        <button className="btn btn-sm btn-outline-success rounded-pill d-inline-flex align-items-center gap-1" onClick={markAllRead} style={{ fontSize: '0.7rem', padding: '2px 8px' }}>
+                          <FiCheck size={11} />Mark all read
+                        </button>
+                      )}
+                      <span className="notif-count">{notifications.length} alerts</span>
+                    </div>
                   </div>
                   <div className="notif-list">
                     {notifications.length === 0 ? (
@@ -105,8 +132,17 @@ export default function AdminLayout({ children }) {
                     ) : (
                       notifications.map((n, i) => {
                         const Icon = iconMap[n.icon] || FiBell;
+                        const isRead = readIds.has(getNotifId(n));
                         return (
-                          <div key={i} className={`notif-item ${severityStyles[n.severity]}`} onClick={() => { navigate(n.link); setNotifOpen(false); }}>
+                          <div key={i} className={`notif-item ${severityStyles[n.severity]} ${isRead ? 'notif-read' : ''}`}
+                            onClick={() => {
+                              const ids = new Set(readIds);
+                              ids.add(getNotifId(n));
+                              setReadIds(ids);
+                              localStorage.setItem('notifReadIds', JSON.stringify([...ids]));
+                              navigate(n.link);
+                              setNotifOpen(false);
+                            }}>
                             <Icon className="notif-item-icon" />
                             <div className="notif-item-text">
                               <p className="mb-0">{n.message}</p>
