@@ -13,6 +13,7 @@ export default function SettingsPage() {
     whatsapp_community: 'https://chat.whatsapp.com/D0KEeEUAWiG5FAiS76yST7',
     instagram: 'https://www.instagram.com/aarogya_paadhai?igsh=MWUxaWdpbnJqMTZlcw==',
     address: 'Krishnagiri, Tamil Nadu, India', business_hours: 'Mon - Sat: 7:00 AM - 8:00 PM',
+    google_review_link: 'https://share.google/qkgLx7V3hzFcefKf8',
   });
   const [password, setPassword] = useState({ current: '', new: '', confirm: '' });
   const [savedSection, setSavedSection] = useState('');
@@ -128,6 +129,11 @@ export default function SettingsPage() {
                 <label className="form-label">Business Hours</label>
                 <input className="form-control" value={store.business_hours}
                   onChange={(e) => setStore({ ...store, business_hours: e.target.value })} />
+              </div>
+              <div className="col-12">
+                <label className="form-label">Google Review Link</label>
+                <input className="form-control" value={store.google_review_link || ''}
+                  onChange={(e) => setStore({ ...store, google_review_link: e.target.value })} />
               </div>
               <div className="col-12">
                 <button className="btn btn-success" onClick={handleStoreSave}>

@@ -12,6 +12,7 @@ const defaultSettings = {
   instagram: 'https://www.instagram.com/aarogya_paadhai?igsh=MWUxaWdpbnJqMTZlcw==',
   address: 'Krishnagiri, Tamil Nadu, India',
   business_hours: 'Mon - Sat: 7:00 AM - 8:00 PM',
+  google_review_link: 'https://share.google/qkgLx7V3hzFcefKf8',
 };
 
 const StoreSettingsContext = createContext(defaultSettings);

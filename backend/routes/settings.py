@@ -23,7 +23,7 @@ def update_store_settings():
         setting = StoreSetting(id=1)
         db.session.add(setting)
     data = request.get_json()
-    fields = ['store_name', 'email', 'phone', 'whatsapp', 'whatsapp_channel', 'whatsapp_community', 'instagram', 'address', 'business_hours']
+    fields = ['store_name', 'email', 'phone', 'whatsapp', 'whatsapp_channel', 'whatsapp_community', 'instagram', 'address', 'business_hours', 'google_review_link']
     for f in fields:
         if f in data:
             setattr(setting, f, data[f])

@@ -7,7 +7,8 @@ import {
   GiLeafSwirl, GiHeartBeats, GiStarfighter, GiFruitBowl, GiPlantRoots, GiWaterDrop,
   GiCheckMark, GiThreeLeaves, GiGreenhouse, GiArrowDunk
 } from 'react-icons/gi';
-import { FaStar, FaStarHalfAlt, FaRegStar, FaLeaf, FaShieldAlt, FaTruck, FaSeedling, FaAppleAlt, FaRecycle, FaQuoteLeft } from 'react-icons/fa';
+import { FaStar, FaStarHalfAlt, FaRegStar, FaLeaf, FaShieldAlt, FaTruck, FaSeedling, FaAppleAlt, FaRecycle, FaQuoteLeft, FaGoogle } from 'react-icons/fa';
+import { useStoreSettings } from '../context/StoreSettingsContext';
 
 const categoryIcons = {
   'GiGrain': GiGrain, 'GiOilPump': GiOilPump, 'GiWheat': GiWheat, 'GiGrainBundle': GiGrainBundle,
@@ -25,6 +26,7 @@ function StarRating({ rating }) {
 }
 
 export default function HomePage() {
+  const settings = useStoreSettings();
   const [activeTab, setActiveTab] = useState('All');
   const [products, setProducts] = useState([]);
   useEffect(() => { fetchProducts().then(setProducts); }, []);
@@ -274,6 +276,33 @@ export default function HomePage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-5" style={{ backgroundColor: '#fff' }}>
+        <div className="container">
+          <div className="row justify-content-center">
+            <div className="col-lg-6">
+              <div className="card border-0 shadow-sm text-center p-4" style={{ borderRadius: '16px' }}>
+                <div className="d-flex justify-content-center mb-3">
+                  <div style={{ width: 64, height: 64, borderRadius: '50%', backgroundColor: '#f0f8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <FaGoogle size={32} style={{ color: '#4285F4' }} />
+                  </div>
+                </div>
+                <h4 className="fw-bold mb-2" style={{ color: '#1e3a1e' }}>Love Our Products?</h4>
+                <p className="text-muted mb-3">Share your experience on Google and help others discover Arogya Paadhai!</p>
+                <div className="mb-3">
+                  {[1,2,3,4,5].map(i => <FaStar key={i} size={20} color="#e8b83e" className="me-1" />)}
+                </div>
+                <a href={settings.google_review_link || 'https://share.google/qkgLx7V3hzFcefKf8'}
+                  target="_blank" rel="noopener noreferrer"
+                  className="btn d-inline-flex align-items-center gap-2 fw-bold text-white px-4 py-2 rounded-pill"
+                  style={{ backgroundColor: '#4285F4' }}>
+                  <FaGoogle /> Write a Review
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </section>
