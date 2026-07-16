@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FaWhatsapp, FaStar, FaStarHalfAlt, FaRegStar, FaCheckCircle, FaShippingFast, FaLeaf, FaArrowLeft, FaHome } from 'react-icons/fa';
-import { fetchProducts, fetchProduct } from '../api';
+import { FaWhatsapp, FaStar, FaStarHalfAlt, FaRegStar, FaCheckCircle, FaShippingFast, FaLeaf, FaArrowLeft, FaHome, FaShoppingBag, FaCopy, FaCheck } from 'react-icons/fa';
+import { fetchProducts, fetchProduct, API_BASE } from '../api';
 import { useLanguage } from '../context/LanguageContext';
+import { useStoreSettings } from '../context/StoreSettingsContext';
 
 function StarRating({ rating, size = 14 }) {
   const stars = [];
@@ -52,6 +53,15 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [orderStep, setOrderStep] = useState(1);
+  const [orderResult, setOrderResult] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [orderForm, setOrderForm] = useState({ customer_name: '', phone: '', address: '', quantity: 1, notes: '' });
+  const settings = useStoreSettings();
+
+  const waNumber = (settings.whatsapp || '+91 82201 28785').replace(/[^0-9]/g, '');
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -62,6 +72,55 @@ export default function ProductDetailPage() {
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [slug]);
+
+  const handleOrderChange = (e) => {
+    const { name, value } = e.target;
+    setOrderForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const placeOrder = async (e) => {
+    e.preventDefault();
+    if (!orderForm.customer_name.trim() || !orderForm.phone.trim()) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE}/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer_name: orderForm.customer_name.trim(),
+          phone: orderForm.phone.trim(),
+          address: orderForm.address.trim(),
+          notes: orderForm.notes.trim(),
+          items: [{ name: product.name, quantity: parseInt(orderForm.quantity) || 1, price: product.price }],
+          total_amount: (parseInt(orderForm.quantity) || 1) * product.price,
+        }),
+      });
+      if (!res.ok) throw new Error('Order failed');
+      const data = await res.json();
+      setOrderResult(data);
+      setOrderStep(2);
+    } catch (err) {
+      alert('Failed to place order. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const copyOrderId = () => {
+    if (orderResult) {
+      navigator.clipboard.writeText(orderResult.order_id);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const resetOrderModal = () => {
+    setShowOrderModal(false);
+    setOrderStep(1);
+    setOrderResult(null);
+    setOrderForm({ customer_name: '', phone: '', address: '', quantity: 1, notes: '' });
+    setCopied(false);
+  };
 
   if (loading) return <div className="text-center py-5"><div className="spinner-border text-success" /></div>;
 
@@ -146,22 +205,22 @@ export default function ProductDetailPage() {
             <p className="mb-4" style={{ lineHeight: 1.8, color: '#555' }}>{product.description}</p>
 
             <div className="d-flex flex-wrap gap-2 mb-4">
+              <button
+                className="btn d-flex align-items-center gap-2 px-4 fw-bold text-white"
+                style={{ backgroundColor: '#2d7a35', borderRadius: '30px', border: 'none' }}
+                onClick={() => setShowOrderModal(true)}
+              >
+                <FaShoppingBag size={18} /> Pre-Order Now
+              </button>
               <a
-                href={`https://wa.me/919876543210?text=Hi! I want to order ${product.name} (&#8377;${product.price})`}
+                href={`https://wa.me/${waNumber}?text=Hi! I want to order ${product.name} (&#8377;${product.price})`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn d-flex align-items-center gap-2 px-4 text-white fw-bold"
                 style={{ backgroundColor: '#25D366', borderRadius: '30px' }}
               >
-                <FaWhatsapp size={20} /> {t.pages.productDetail.enquireWhatsApp}
+                <FaWhatsapp size={20} /> Enquire on WhatsApp
               </a>
-              <button
-                className="btn d-flex align-items-center gap-2 px-4 fw-bold"
-                style={{ backgroundColor: '#2d7a35', color: '#fff', borderRadius: '30px', border: 'none' }}
-                onClick={() => alert(`${t.pages.productDetail.addToCart} ${product.name}!`)}
-              >
-                <FaCheckCircle /> {t.pages.productDetail.addToCart}
-              </button>
             </div>
 
             <div className="d-flex flex-wrap gap-3 small" style={{ color: '#666' }}>
@@ -264,7 +323,7 @@ export default function ProductDetailPage() {
                 <h6 className="fw-bold mt-2" style={{ color: '#1e3a1e' }}>{t.pages.productDetail.haveQuestion}</h6>
                 <p className="small text-muted">{t.pages.productDetail.chatDesc}</p>
                 <a
-                  href={`https://wa.me/919876543210?text=Hi! I have a question about ${product.name}`}
+                  href={`https://wa.me/${waNumber}?text=Hi! I have a question about ${product.name}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn d-inline-flex align-items-center gap-2 text-white fw-bold"
@@ -295,6 +354,116 @@ export default function ProductDetailPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {showOrderModal && (
+        <div className="modal-backdrop fade show" style={{ zIndex: 1050 }}
+          onClick={orderStep === 2 ? resetOrderModal : undefined} />
+      )}
+      {showOrderModal && (
+        <div className="modal fade show d-block" style={{ zIndex: 1055 }} tabIndex="-1">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content" style={{ borderRadius: '16px', border: 'none' }}>
+              <div className="modal-header border-0" style={{ backgroundColor: '#fdf7e6' }}>
+                <h5 className="modal-title fw-bold" style={{ color: '#1e3a1e' }}>
+                  {orderStep === 1 ? <><FaShoppingBag className="me-2 text-success" />Pre-Order</> : <><FaCheckCircle className="me-2 text-success" />Order Placed!</>}
+                </h5>
+                <button type="button" className="btn-close" onClick={resetOrderModal} />
+              </div>
+
+              {orderStep === 1 && (
+                <form onSubmit={placeOrder}>
+                  <div className="modal-body">
+                    <div className="d-flex align-items-center gap-3 mb-3 p-3 rounded-3" style={{ backgroundColor: '#e8f5e9' }}>
+                      <div style={{ width: 50, height: 50, borderRadius: 8, background: '#2d7a35', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '1.2rem' }}>
+                        {product.name.charAt(0)}
+                      </div>
+                      <div>
+                        <h6 className="fw-bold mb-0" style={{ color: '#1e3a1e' }}>{product.name}</h6>
+                        <span className="fw-bold" style={{ color: '#2d7a35' }}>Rs.{product.price} × {orderForm.quantity}</span>
+                        <div className="fw-bold mt-1">Total: Rs.{(parseInt(orderForm.quantity) || 1) * product.price}</div>
+                      </div>
+                    </div>
+
+                    <div className="mb-2">
+                      <label className="form-label small fw-bold">Quantity</label>
+                      <input type="number" className="form-control" name="quantity" min="1" value={orderForm.quantity}
+                        onChange={handleOrderChange} style={{ borderRadius: '10px' }} />
+                    </div>
+                    <div className="mb-2">
+                      <label className="form-label small fw-bold">Your Name *</label>
+                      <input type="text" className="form-control" name="customer_name" required
+                        value={orderForm.customer_name} onChange={handleOrderChange} placeholder="Enter your name"
+                        style={{ borderRadius: '10px' }} />
+                    </div>
+                    <div className="mb-2">
+                      <label className="form-label small fw-bold">Phone Number *</label>
+                      <input type="tel" className="form-control" name="phone" required
+                        value={orderForm.phone} onChange={handleOrderChange} placeholder="Enter your phone"
+                        style={{ borderRadius: '10px' }} />
+                    </div>
+                    <div className="mb-2">
+                      <label className="form-label small fw-bold">Address</label>
+                      <textarea className="form-control" name="address" rows="2"
+                        value={orderForm.address} onChange={handleOrderChange} placeholder="Delivery address (optional)"
+                        style={{ borderRadius: '10px' }} />
+                    </div>
+                    <div className="mb-2">
+                      <label className="form-label small fw-bold">Notes</label>
+                      <textarea className="form-control" name="notes" rows="2"
+                        value={orderForm.notes} onChange={handleOrderChange} placeholder="Any special instructions"
+                        style={{ borderRadius: '10px' }} />
+                    </div>
+                  </div>
+                  <div className="modal-footer border-0">
+                    <button type="button" className="btn btn-outline-secondary rounded-pill px-4" onClick={resetOrderModal}>Cancel</button>
+                    <button type="submit" className="btn rounded-pill px-4 text-white fw-bold"
+                      style={{ backgroundColor: '#2d7a35' }} disabled={submitting}>
+                      {submitting ? 'Placing Order...' : 'Place Order'}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {orderStep === 2 && orderResult && (
+                <div className="modal-body text-center py-4">
+                  <FaCheckCircle size={48} style={{ color: '#2d7a35' }} />
+                  <h5 className="fw-bold mt-3" style={{ color: '#1e3a1e' }}>Order Confirmed!</h5>
+                  <p className="text-muted small">Your order has been placed successfully.</p>
+
+                  <div className="p-3 rounded-3 mb-3" style={{ backgroundColor: '#e8f5e9' }}>
+                    <div className="small text-muted">Order ID</div>
+                    <div className="fw-bold" style={{ fontSize: '1.1rem', color: '#1e3a1e' }}>{orderResult.order_id}</div>
+                    <button className="btn btn-sm btn-outline-success mt-2 rounded-pill" onClick={copyOrderId}>
+                      {copied ? <><FaCheck className="me-1" />Copied!</> : <><FaCopy className="me-1" />Copy Order ID</>}
+                    </button>
+                  </div>
+
+                  <div className="mb-3">
+                    <p className="small fw-bold mb-2" style={{ color: '#1e3a1e' }}>Pay via Google Pay</p>
+                    <div className="d-flex justify-content-center">
+                      <div style={{ width: 180, height: 180, background: '#f0f0f0', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed #ccc' }}>
+                        <img src="/qr.png" alt="GPay QR Code" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 12 }}
+                          onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<span class=\'text-muted small\'>QR code not set yet</span>'; }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <a href={`https://wa.me/${waNumber}?text=I have placed order ${orderResult.order_id} for ${product.name}. Please find the payment screenshot attached.`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="btn d-inline-flex align-items-center gap-2 text-white fw-bold w-100 justify-content-center rounded-pill"
+                    style={{ backgroundColor: '#25D366' }}>
+                    <FaWhatsapp size={18} /> Send Payment Screenshot via WhatsApp
+                  </a>
+
+                  <button className="btn btn-outline-success rounded-pill w-100 mt-2" onClick={resetOrderModal}>
+                    Continue Shopping
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

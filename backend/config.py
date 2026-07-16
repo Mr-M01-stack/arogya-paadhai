@@ -22,3 +22,5 @@ class Config:
     ADMIN_PASSWORD = 'admin123'
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', '*').split(',')
     CORS_ORIGINS = [o.strip() for o in CORS_ORIGINS if o.strip()]
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME', '')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', '')

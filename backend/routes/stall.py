@@ -2,7 +2,7 @@ from datetime import datetime, date, timedelta
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy import func, extract
-from models import db, Stall, Sale, ProductStock, Production, Investment, ProductPrice, Customer, EnquiryExtended, ProductRequest, Climate, Product
+from models import db, Stall, Sale, ProductStock, Production, Investment, ProductPrice, Customer, EnquiryExtended, ProductRequest, Climate, Product, Order
 
 stall_bp = Blueprint('stall', __name__, url_prefix='/api')
 
@@ -701,6 +701,7 @@ def dashboard():
     total_products = Product.query.count()
     pending_enquiries = EnquiryExtended.query.filter_by(status='pending').count()
     pending_requests = ProductRequest.query.filter_by(status='pending').count()
+    pending_orders = Order.query.filter_by(order_status='pending').count()
     active_stall = Stall.query.filter_by(date=today, status='open').first()
 
     return jsonify({
@@ -710,6 +711,7 @@ def dashboard():
         'total_products': total_products,
         'pending_enquiries': pending_enquiries,
         'pending_requests': pending_requests,
+        'pending_orders': pending_orders,
     })
 
 

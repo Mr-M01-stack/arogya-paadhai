@@ -85,6 +85,7 @@ export default function DashboardPage() {
     { icon: FiPackage, label: 'Total Products', value: formatIndianInt(d.total_products || 0), color: '#10b981', bg: '#d1fae5', sub: 'In catalog' },
     { icon: FiMessageSquare, label: 'Pending Enquiries', value: formatIndianInt(d.pending_enquiries || 0), color: '#f59e0b', bg: '#fef3c7', sub: 'Follow up needed' },
     { icon: FiFileText, label: 'Product Requests', value: formatIndianInt(d.pending_requests || 0), color: '#8b5cf6', bg: '#f3e8ff', sub: 'Pending review' },
+    { icon: FiShoppingCart, label: 'Pending Orders', value: formatIndianInt(d.pending_orders || 0), color: '#ef4444', bg: '#fee2e2', sub: 'Awaiting confirmation', link: '/orders' },
   ];
 
   const exportExcel = () => {
@@ -171,7 +172,7 @@ export default function DashboardPage() {
       <div className="row g-3 mb-4">
         {kpiCards.map((card, i) => (
           <div className="col-xl-3 col-lg-4 col-md-6" key={i}>
-            <div className="stat-card" style={{ backgroundColor: card.bg }}>
+            <div className="stat-card" style={{ backgroundColor: card.bg, cursor: card.link ? 'pointer' : 'default' }} onClick={() => card.link && navigate(card.link)}>
               <div className="stat-icon" style={{ color: card.color }}>
                 <card.icon size={28} />
               </div>

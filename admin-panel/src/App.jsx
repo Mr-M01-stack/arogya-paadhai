@@ -16,6 +16,7 @@ import CustomersPage from './pages/CustomersPage';
 import EnquiriesPage from './pages/EnquiriesPage';
 import ReportsPage from './pages/ReportsPage';
 import ExportPage from './pages/ExportPage';
+import OrdersPage from './pages/OrdersPage';
 import AdminLayout from './components/AdminLayout';
 
 function ProtectedRoute({ children }) {
@@ -50,6 +51,7 @@ function AppRoutes() {
       <Route path="/reports" element={<ProtectedRoute><AdminLayout><ReportsPage /></AdminLayout></ProtectedRoute>} />
       <Route path="/export" element={<ProtectedRoute><AdminLayout><ExportPage /></AdminLayout></ProtectedRoute>} />
       <Route path="/analytics" element={<ProtectedRoute><AdminLayout><AnalyticsPage /></AdminLayout></ProtectedRoute>} />
+      <Route path="/orders" element={<ProtectedRoute><AdminLayout><OrdersPage /></AdminLayout></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><AdminLayout><SettingsPage /></AdminLayout></ProtectedRoute>} />
       <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} />
     </Routes>

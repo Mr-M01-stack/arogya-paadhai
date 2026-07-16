@@ -530,6 +530,39 @@ class StoreSetting(db.Model):
         }
 
 
+class Order(db.Model):
+    __tablename__ = 'orders'
+
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.String(20), unique=True, nullable=False)
+    customer_name = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(20), nullable=False)
+    address = db.Column(db.Text, nullable=True)
+    items = db.Column(db.JSON, nullable=False)
+    total_amount = db.Column(db.Float, nullable=False, default=0)
+    payment_status = db.Column(db.String(20), default='pending')
+    order_status = db.Column(db.String(20), default='pending')
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'order_id': self.order_id,
+            'customer_name': self.customer_name,
+            'phone': self.phone,
+            'address': self.address,
+            'items': self.items,
+            'total_amount': self.total_amount,
+            'payment_status': self.payment_status,
+            'order_status': self.order_status,
+            'notes': self.notes,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
 class AdminUser(db.Model):
     __tablename__ = 'admin_users'
 

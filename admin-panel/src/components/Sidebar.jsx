@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { FiGrid, FiPackage, FiFolder, FiCalendar, FiBarChart2, FiSettings, FiLogOut, FiMapPin, FiDollarSign, FiBox, FiTool, FiTrendingUp, FiUsers, FiMessageSquare, FiFileText, FiDownload } from 'react-icons/fi';
+import { FiGrid, FiPackage, FiFolder, FiCalendar, FiBarChart2, FiSettings, FiLogOut, FiMapPin, FiDollarSign, FiBox, FiTool, FiTrendingUp, FiUsers, FiMessageSquare, FiFileText, FiDownload, FiShoppingCart } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
+import { API } from '../api';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: FiGrid },
@@ -11,6 +13,7 @@ const navItems = [
   { to: '/investment', label: 'Daily Investment', icon: FiTrendingUp },
   { to: '/customers', label: 'Customer Analytics', icon: FiUsers },
   { to: '/enquiries', label: 'Enquiries', icon: FiMessageSquare },
+  { to: '/orders', label: 'Orders', icon: FiShoppingCart, badge: 'pendingOrders' },
   { to: '/products', label: 'Products', icon: FiPackage },
   { to: '/categories', label: 'Categories', icon: FiFolder },
   { to: '/daily-update', label: 'Daily Update', icon: FiCalendar },
@@ -21,7 +24,21 @@ const navItems = [
 ];
 
 export default function Sidebar({ collapsed, onToggle }) {
-  const { logout } = useAuth();
+  const { logout, token } = useAuth();
+  const [pendingOrders, setPendingOrders] = useState(0);
+
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API}/orders/pending-count`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }).then(r => r.json()).then(d => setPendingOrders(d.count || 0)).catch(() => {});
+    const interval = setInterval(() => {
+      fetch(`${API}/orders/pending-count`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      }).then(r => r.json()).then(d => setPendingOrders(d.count || 0)).catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [token]);
 
   return (
     <>
@@ -41,6 +58,9 @@ export default function Sidebar({ collapsed, onToggle }) {
               >
                 <item.icon className="nav-icon" />
                 <span className="nav-label">{item.label}</span>
+                {item.badge === 'pendingOrders' && pendingOrders > 0 && (
+                  <span className="badge bg-danger ms-auto">{pendingOrders}</span>
+                )}
               </NavLink>
             </li>
           ))}
