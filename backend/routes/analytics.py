@@ -1,6 +1,8 @@
+from datetime import datetime, timedelta
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
-from models import db, Product, Category, Enquiry, DailyUpdate
+from sqlalchemy import func
+from models import db, Product, Category, Enquiry, Order
 
 analytics_bp = Blueprint('analytics', __name__, url_prefix='/api/analytics')
 
@@ -12,15 +14,20 @@ def summary():
     total_categories = Category.query.count()
     total_enquiries = Enquiry.query.count()
     unread_enquiries = Enquiry.query.filter_by(is_read=False).count()
-    total_sales = db.session.query(db.func.sum(Product.sales)).scalar() or 0
-    total_revenue = db.session.query(
-        db.func.sum(Product.sales * Product.price)
-    ).scalar() or 0.0
+    total_sales = db.session.query(func.sum(Product.sales)).scalar() or 0
+    total_revenue = db.session.query(func.sum(Product.sales * Product.price)).scalar() or 0.0
     available_today = Product.query.filter_by(is_available_today=True).count()
     out_of_stock = Product.query.filter_by(availability='out_of_stock').count()
-    total_stock = db.session.query(db.func.sum(Product.stock)).scalar() or 0
-    avg_rating = db.session.query(db.func.avg(Product.rating)).scalar() or 0.0
+    total_stock = db.session.query(func.sum(Product.stock)).scalar() or 0
+    avg_rating = db.session.query(func.avg(Product.rating)).scalar() or 0.0
     featured_count = Product.query.filter_by(featured=True).count()
+    total_orders = Order.query.count()
+
+    order_revenue = db.session.query(func.sum(Order.total_amount)).filter(
+        Order.payment_status == 'paid'
+    ).scalar() or 0.0
+
+    pending_orders = Order.query.filter_by(order_status='pending').count()
 
     return jsonify({
         'total_products': total_products,
@@ -34,6 +41,9 @@ def summary():
         'total_stock': total_stock,
         'average_rating': round(avg_rating, 2),
         'featured_count': featured_count,
+        'total_orders': total_orders,
+        'order_revenue': round(order_revenue, 2),
+        'pending_orders': pending_orders,
     }), 200
 
 
@@ -41,7 +51,6 @@ def summary():
 @jwt_required()
 def sales_by_category():
     products = Product.query.all()
-
     category_sales = {}
     for product in products:
         cat = product.category or 'Uncategorized'
@@ -56,51 +65,46 @@ def sales_by_category():
         category_sales[cat]['total_revenue'] += product.sales * product.price
         category_sales[cat]['product_count'] += 1
 
-    return jsonify({
-        'categories': list(category_sales.values())
-    }), 200
+    return jsonify({'categories': list(category_sales.values())}), 200
 
 
 @analytics_bp.route('/monthly-sales', methods=['GET'])
 @jwt_required()
 def monthly_sales():
-    from datetime import datetime, timedelta
-    from collections import defaultdict
-
-    last_6_months = []
     today = datetime.utcnow()
+    months = []
     for i in range(5, -1, -1):
-        month = today.month - i
-        year = today.year
-        while month < 1:
-            month += 12
-            year -= 1
-        while month > 12:
-            month -= 12
-            year += 1
-        last_6_months.append((year, month))
+        m = today.month - i
+        y = today.year
+        while m < 1:
+            m += 12
+            y -= 1
+        start = datetime(y, m, 1)
+        if m == 12:
+            end = datetime(y + 1, 1, 1)
+        else:
+            end = datetime(y, m + 1, 1)
 
-    monthly_data = []
-    for year, month in last_6_months:
-        month_name = datetime(year, month, 1).strftime('%b %Y')
+        order_count = Order.query.filter(
+            Order.created_at >= start, Order.created_at < end
+        ).count()
+        order_rev = db.session.query(func.sum(Order.total_amount)).filter(
+            Order.created_at >= start, Order.created_at < end,
+            Order.payment_status == 'paid'
+        ).scalar() or 0
 
-        products_in_month = Product.query.all()
-        month_sales = sum(p.sales // 6 for p in products_in_month)
-        month_revenue = sum(
-            (p.sales // 6) * p.price for p in products_in_month
-        )
+        prod_sales = sum(p.sales for p in Product.query.all())
+        prod_rev = sum(p.sales * p.price for p in Product.query.all())
 
-        monthly_data.append({
-            'month': month_name,
-            'year': year,
-            'month_index': month,
-            'sales': month_sales,
-            'revenue': round(month_revenue, 2),
+        months.append({
+            'month': start.strftime('%b %Y'),
+            'year': y,
+            'month_index': m,
+            'sales': order_count + (prod_sales // 6),
+            'revenue': round(order_rev + (prod_rev / 6 if prod_rev else 0), 2),
         })
 
-    return jsonify({
-        'monthly_sales': monthly_data
-    }), 200
+    return jsonify({'monthly_sales': months}), 200
 
 
 @analytics_bp.route('/top-products', methods=['GET'])
@@ -108,10 +112,9 @@ def monthly_sales():
 def top_products():
     limit = request.args.get('limit', 10, type=int)
     products = Product.query.order_by(Product.sales.desc()).limit(limit).all()
-
     return jsonify({
         'products': [p.to_dict() for p in products],
-        'count': len(products)
+        'count': len(products),
     }), 200
 
 

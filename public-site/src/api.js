@@ -18,6 +18,23 @@ export async function fetchTodayProducts() {
   return (data.products || []).map(formatProduct);
 }
 
+export async function fetchReviews(productId) {
+  const res = await fetch(`${API_BASE}/products/${productId}/reviews`);
+  const data = await res.json();
+  return data;
+}
+
+export async function submitReview(productId, { name, rating, comment }) {
+  const res = await fetch(`${API_BASE}/products/${productId}/reviews`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, rating, comment }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to submit review');
+  return data;
+}
+
 function formatProduct(p) {
   return {
     id: p.id,

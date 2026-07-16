@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FaWhatsapp, FaStar, FaStarHalfAlt, FaRegStar, FaCheckCircle, FaShippingFast, FaLeaf, FaArrowLeft, FaHome, FaShoppingCart } from 'react-icons/fa';
-import { fetchProducts, fetchProduct } from '../api';
+import { fetchProducts, fetchProduct, fetchReviews, submitReview } from '../api';
 import { useLanguage } from '../context/LanguageContext';
 import { useStoreSettings } from '../context/StoreSettingsContext';
 import { useCart } from '../context/CartContext';
@@ -56,6 +56,10 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [addedQty, setAddedQty] = useState(1);
   const [showAddedMsg, setShowAddedMsg] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [reviewForm, setReviewForm] = useState({ name: '', rating: 5, comment: '' });
+  const [submitReviewLoading, setSubmitReviewLoading] = useState(false);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
   const settings = useStoreSettings();
   const { addToCart } = useCart();
 
@@ -76,6 +80,34 @@ export default function ProductDetailPage() {
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [slug]);
+
+  useEffect(() => {
+    if (product) {
+      fetchReviews(product.id).then(data => {
+        setReviews(data.reviews || []);
+        setProduct(prev => prev ? { ...prev, rating: data.average_rating, reviews: data.total_reviews } : prev);
+      }).catch(() => {});
+    }
+  }, [product?.id]);
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!reviewForm.name.trim() || !reviewForm.rating) return;
+    setSubmitReviewLoading(true);
+    try {
+      await submitReview(product.id, reviewForm);
+      setReviewSubmitted(true);
+      setReviewForm({ name: '', rating: 5, comment: '' });
+      const data = await fetchReviews(product.id);
+      setReviews(data.reviews || []);
+      setProduct(prev => prev ? { ...prev, rating: data.average_rating, reviews: data.total_reviews } : prev);
+      setTimeout(() => setReviewSubmitted(false), 3000);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSubmitReviewLoading(false);
+    }
+  };
 
 
 
@@ -101,6 +133,7 @@ export default function ProductDetailPage() {
     { id: 'ingredients', label: t.pages.productDetail.tabIngredients },
     { id: 'benefits', label: t.pages.productDetail.tabBenefits },
     { id: 'usage', label: t.pages.productDetail.tabUsage },
+    { id: 'reviews', label: `Reviews (${product?.reviews || 0})` },
   ];
 
   const availabilityBadge = {
@@ -263,6 +296,73 @@ export default function ProductDetailPage() {
                       <h6 className="fw-bold" style={{ color: '#2d7a35' }}>{t.pages.productDetail.storageInstructions}</h6>
                       <p style={{ lineHeight: 1.8, color: '#555' }}>{product.storage}</p>
                     </div>
+                  </div>
+                )}
+                {activeTab === 'reviews' && (
+                  <div>
+                    <div className="d-flex align-items-center gap-3 mb-4">
+                      <div className="text-center">
+                        <div style={{ fontSize: '2.5rem', fontWeight: 700, color: '#2d7a35' }}>{product.rating || 0}</div>
+                        <StarRating rating={product.rating} size={14} />
+                        <div className="small text-muted mt-1">{product.reviews} reviews</div>
+                      </div>
+                    </div>
+
+                    {reviews.length > 0 ? (
+                      <div className="mb-4">
+                        <h6 className="fw-bold mb-3" style={{ color: '#1e3a1e' }}>Customer Reviews</h6>
+                        {reviews.map((r, i) => (
+                          <div key={r.id} className="p-3 rounded-3 mb-2" style={{ backgroundColor: '#f8fcf8' }}>
+                            <div className="d-flex justify-content-between align-items-center mb-1">
+                              <strong style={{ color: '#1e3a1e' }}>{r.name}</strong>
+                              <small className="text-muted">{new Date(r.created_at).toLocaleDateString('en-IN')}</small>
+                            </div>
+                            <div className="mb-1">
+                              {[1,2,3,4,5].map(s => (
+                                <FaStar key={s} size={12} color={s <= r.rating ? '#e8b83e' : '#ddd'} className="me-1" />
+                              ))}
+                            </div>
+                            {r.comment && <p className="small mb-0" style={{ color: '#555' }}>{r.comment}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted small mb-4">No reviews yet. Be the first to review!</p>
+                    )}
+
+                    <hr />
+                    <h6 className="fw-bold mb-3" style={{ color: '#1e3a1e' }}>Write a Review</h6>
+                    {reviewSubmitted && (
+                      <div className="alert alert-success py-2 small">Thank you for your review!</div>
+                    )}
+                    <form onSubmit={handleSubmitReview}>
+                      <div className="mb-2">
+                        <label className="form-label small fw-bold">Your Name *</label>
+                        <input type="text" className="form-control" value={reviewForm.name}
+                          onChange={e => setReviewForm(f => ({ ...f, name: e.target.value }))}
+                          placeholder="Enter your name" required style={{ borderRadius: '10px' }} />
+                      </div>
+                      <div className="mb-2">
+                        <label className="form-label small fw-bold">Rating *</label>
+                        <div className="d-flex gap-1">
+                          {[1,2,3,4,5].map(s => (
+                            <FaStar key={s} size={24}
+                              style={{ cursor: 'pointer', color: s <= reviewForm.rating ? '#e8b83e' : '#ddd' }}
+                              onClick={() => setReviewForm(f => ({ ...f, rating: s }))} />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="mb-2">
+                        <label className="form-label small fw-bold">Comment</label>
+                        <textarea className="form-control" rows="2" value={reviewForm.comment}
+                          onChange={e => setReviewForm(f => ({ ...f, comment: e.target.value }))}
+                          placeholder="Share your experience (optional)" style={{ borderRadius: '10px' }} />
+                      </div>
+                      <button type="submit" className="btn text-white fw-bold rounded-pill px-4"
+                        style={{ backgroundColor: '#2d7a35' }} disabled={submitReviewLoading}>
+                        {submitReviewLoading ? 'Submitting...' : 'Submit Review'}
+                      </button>
+                    </form>
                   </div>
                 )}
               </div>

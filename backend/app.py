@@ -13,6 +13,7 @@ from routes.stall import stall_bp
 from routes.settings import settings_bp
 from routes.export import export_bp
 from routes.orders import orders_bp
+from routes.reviews import reviews_bp
 
 
 def seed_essentials():
@@ -123,6 +124,7 @@ def create_app():
     app.register_blueprint(settings_bp)
     app.register_blueprint(export_bp)
     app.register_blueprint(orders_bp)
+    app.register_blueprint(reviews_bp)
 
     @app.errorhandler(404)
     def not_found(error):
