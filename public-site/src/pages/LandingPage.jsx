@@ -740,7 +740,7 @@ export default function LandingPage() {
                 <div className="mb-3">
                   {[1,2,3,4,5].map(i => <FaStar key={i} size={20} color="#e8b83e" className="me-1" />)}
                 </div>
-                <a href={settings.google_review_link || 'https://share.google/qkgLx7V3hzFcefKf8'}
+                <a href={settings.google_review_link || 'https://maps.app.goo.gl/gKjrZUMHv4RZhiA98'}
                   target="_blank" rel="noopener noreferrer"
                   className="btn d-inline-flex align-items-center gap-2 fw-bold text-white px-4 py-2 rounded-pill"
                   style={{ backgroundColor: '#4285F4' }}>

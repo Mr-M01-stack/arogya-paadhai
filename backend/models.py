@@ -512,7 +512,7 @@ class StoreSetting(db.Model):
     instagram = db.Column(db.String(500), default='https://www.instagram.com/aarogya_paadhai?igsh=MWUxaWdpbnJqMTZlcw==')
     address = db.Column(db.Text, default='Krishnagiri, Tamil Nadu, India')
     business_hours = db.Column(db.Text, default='Mon - Sat: 7:00 AM - 8:00 PM')
-    google_review_link = db.Column(db.String(500), default='https://share.google/qkgLx7V3hzFcefKf8')
+    google_review_link = db.Column(db.String(500), default='https://maps.app.goo.gl/gKjrZUMHv4RZhiA98')
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     def to_dict(self):
