@@ -76,6 +76,21 @@ def seed_essentials():
     db.session.commit()
 
 
+def migrate_store_settings_columns():
+    missing = [
+        ('whatsapp_channel', 'VARCHAR(500)', "'https://whatsapp.com/channel/0029Vb81pg04IBhIymkvd53h'"),
+        ('whatsapp_community', 'VARCHAR(500)', "'https://chat.whatsapp.com/D0KEeEUAWiG5FAiS76yST7'"),
+        ('instagram', 'VARCHAR(500)', "'https://www.instagram.com/aarogya_paadhai?igsh=MWUxaWdpbnJqMTZlcw=='"),
+        ('google_review_link', 'VARCHAR(500)', "'https://maps.app.goo.gl/gKjrZUMHv4RZhiA98'"),
+    ]
+    for col, col_type, default in missing:
+        try:
+            db.session.execute(db.text(f'ALTER TABLE store_settings ADD COLUMN {col} {col_type} DEFAULT {default}'))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+
 def create_app():
     app = Flask(__name__, static_folder='static')
     app.config.from_object(Config)
@@ -147,6 +162,7 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        migrate_store_settings_columns()
         seed_essentials()
 
     return app
