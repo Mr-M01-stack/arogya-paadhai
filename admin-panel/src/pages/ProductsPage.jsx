@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiSearch } from 'react-icons/fi';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { FiPlus, FiEdit2, FiTrash2, FiSearch, FiUpload } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 
 import { API } from '../api';
@@ -50,6 +50,8 @@ export default function ProductsPage() {
   const [showDelete, setShowDelete] = useState(null);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => { fetchProducts(); }, []);
 
@@ -104,6 +106,29 @@ export default function ProductsPage() {
     if (!form.category) e.category = 'Category is required';
     setErrors(e);
     return Object.keys(e).length === 0;
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${API}/upload`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      setForm({ ...form, image: data.url });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleSave = async () => {
@@ -340,9 +365,22 @@ export default function ProductsPage() {
                   {errors.stock && <div className="invalid-feedback">{errors.stock}</div>}
                 </div>
                 <div className="col-md-4">
-                  <label className="form-label">Image URL</label>
-                  <input className="form-control" value={form.image}
-                    onChange={(e) => setForm({ ...form, image: e.target.value })} />
+                  <label className="form-label">Image</label>
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <input type="file" accept="image/*" className="form-control form-control-sm" ref={fileInputRef}
+                      onChange={handleFileUpload} disabled={uploading} style={{ fontSize: '0.85rem' }} />
+                    {uploading && <span className="spinner-border spinner-border-sm text-success" />}
+                  </div>
+                  {form.image && (
+                    <div className="d-flex align-items-center gap-2 mb-2">
+                      <img src={form.image} alt="preview" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 8, border: '1px solid #ddd' }}
+                        onError={(e) => { e.target.style.display = 'none' }} />
+                      <small className="text-muted" style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}>{form.image}</small>
+                    </div>
+                  )}
+                  <small className="text-muted">Pick a file or paste a URL below:</small>
+                  <input className="form-control form-control-sm mt-1" placeholder="Or paste image URL" value={form.image}
+                    onChange={(e) => setForm({ ...form, image: e.target.value })} style={{ fontSize: '0.85rem' }} />
                 </div>
                 <div className="col-12">
                   <label className="form-label">Ingredients (comma separated)</label>

@@ -15,6 +15,7 @@ from routes.settings import settings_bp
 from routes.export import export_bp
 from routes.orders import orders_bp
 from routes.reviews import reviews_bp
+from routes.upload import upload_bp
 
 
 def seed_essentials():
@@ -76,7 +77,7 @@ def seed_essentials():
 
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder='static')
     app.config.from_object(Config)
 
     CORS(app, origins=Config.CORS_ORIGINS, supports_credentials=True, vary_header=False)
@@ -130,6 +131,7 @@ def create_app():
     app.register_blueprint(export_bp)
     app.register_blueprint(orders_bp)
     app.register_blueprint(reviews_bp)
+    app.register_blueprint(upload_bp)
 
     @app.errorhandler(404)
     def not_found(error):
