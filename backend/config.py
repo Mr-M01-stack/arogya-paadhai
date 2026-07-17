@@ -7,7 +7,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 class Config:
     SECRET_KEY = os.environ['SECRET_KEY']
     JWT_SECRET_KEY = os.environ['JWT_SECRET_KEY']
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=2)
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
     JWT_TOKEN_LOCATION = ['headers']
     JWT_HEADER_NAME = 'Authorization'
     JWT_HEADER_TYPE = 'Bearer'
