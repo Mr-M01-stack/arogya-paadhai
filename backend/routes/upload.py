@@ -32,5 +32,5 @@ def upload_image():
     upload_dir = os.path.join(current_app.root_path, 'static', 'uploads')
     os.makedirs(upload_dir, exist_ok=True)
     file.save(os.path.join(upload_dir, filename))
-    url = f"/static/uploads/{filename}"
+    url = f"{request.host_url}static/uploads/{filename}"
     return jsonify({'url': url, 'message': 'Upload successful'}), 200

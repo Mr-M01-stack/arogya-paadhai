@@ -1,4 +1,5 @@
 export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const BACKEND_BASE = API_BASE.replace(/\/api$/, '');
 
 export async function fetchProducts() {
   const res = await fetch(`${API_BASE}/products`);
@@ -35,6 +36,11 @@ export async function submitReview(productId, { name, rating, comment }) {
   return data;
 }
 
+function absImage(url) {
+  if (!url || url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${BACKEND_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
+}
+
 function formatProduct(p) {
   return {
     id: p.id,
@@ -42,7 +48,7 @@ function formatProduct(p) {
     slug: p.slug,
     price: p.price,
     originalPrice: p.original_price || 0,
-    image: p.image,
+    image: absImage(p.image),
     category: p.category,
     description: p.description,
     ingredients: Array.isArray(p.ingredients) ? p.ingredients : [],
