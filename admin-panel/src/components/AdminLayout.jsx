@@ -89,7 +89,6 @@ export default function AdminLayout({ children }) {
   return (
     <div className="admin-layout">
       <Sidebar collapsed={false} onToggle={() => setSidebarOpen(false)} />
-      <Sidebar collapsed={true} onToggle={() => setSidebarOpen(!sidebarOpen)} />
       <div className={`mobile-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="mobile-sidebar-header">
           <button className="btn btn-link text-white" onClick={() => setSidebarOpen(false)}>

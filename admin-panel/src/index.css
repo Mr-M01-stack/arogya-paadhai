@@ -563,4 +563,11 @@ body {
   .stat-value { font-size: 20px; }
   .admin-card { padding: 16px; }
   .search-box { max-width: 100%; }
+  .notification-dropdown { width: calc(100vw - 32px); right: -70px; }
+}
+
+@media (max-width: 575.98px) {
+  .notification-dropdown { right: -50px; }
+  .admin-topbar { padding: 0 12px; }
+  .admin-content { padding: 12px; }
 }
