@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
-from models import db, StoreSetting, AdminUser
+from models import db, StoreSetting
 
 settings_bp = Blueprint('settings', __name__, url_prefix='/api/settings')
 
@@ -9,9 +9,9 @@ settings_bp = Blueprint('settings', __name__, url_prefix='/api/settings')
 def get_store_settings():
     setting = StoreSetting.query.first()
     if not setting:
-        setting = StoreSetting()
+        setting = StoreSetting(store_name='Arogya Paadhai')
         db.session.add(setting)
-        db.session.flush()
+        db.session.commit()
     return jsonify(setting.to_dict())
 
 
@@ -20,8 +20,9 @@ def get_store_settings():
 def update_store_settings():
     setting = StoreSetting.query.first()
     if not setting:
-        setting = StoreSetting()
+        setting = StoreSetting(store_name='Arogya Paadhai')
         db.session.add(setting)
+        db.session.flush()
     data = request.get_json()
     if not data:
         return jsonify({'error': 'No data provided'}), 400
@@ -29,5 +30,9 @@ def update_store_settings():
     for f in fields:
         if f in data:
             setattr(setting, f, data[f])
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
     return jsonify(setting.to_dict())
