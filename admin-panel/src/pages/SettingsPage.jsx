@@ -38,7 +38,9 @@ export default function SettingsPage() {
       const res = await fetch(`${API}/settings/store`, {
         method: 'PUT', headers: headers(), body: JSON.stringify(store),
       });
-      if (!res.ok) throw new Error('Failed to save');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Save failed');
+      setStore({ ...store, ...data });
       setSavedSection('store');
       setTimeout(() => setSavedSection(''), 2000);
     } catch (e) {
